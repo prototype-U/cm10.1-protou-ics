@@ -13,9 +13,3 @@
 /dev/block/mmcblk0p26	/cache		ext4	noatime,nosuid,nodev,barrier=0				wait
 /dev/block/mmcblk0p25	/data		ext4	noatime,nosuid,nodev,noauto_da_alloc,barrier=0		wait,encryptable=footer,length=-16384
 
-# SD card
-/dev/block/mmcblk0p31	/storage/sdcard0	auto	defaults		voldmanaged=sdcard0:31
-/dev/block/mmcblk1p1	/storage/sdcard1	auto	defaults		voldmanaged=sdcard1:auto
-
-# USB storage
-/devices/platform/msm_hsusb_host/usb	/storage/usb	auto	defaults			voldmanaged=usb:auto
