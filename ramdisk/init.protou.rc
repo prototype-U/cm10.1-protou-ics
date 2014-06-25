@@ -1,113 +1,88 @@
 import /init.protou.usb.rc
 
-on emmc
-
-    mkdir /system
-    mkdir /data 0771 system system
-    mkdir /cache 0770 system cache
-    mkdir /devlog 0700 root root
-    devwait emmc@system
-    mount ext4 emmc@system /system ro barrier=1
-
-    devwait emmc@userdata
-    mount_all /fstab.protou
-
-    devwait emmc@userdata
-#   exec /system/bin/e2fsck -p emmc@userdata
-    mount ext4 emmc@userdata /data nosuid nodev barrier=1 noauto_da_alloc
-    mount ext4 emmc@cache /cache nosuid nodev barrier=1
-    mount ext4 emmc@devlog /devlog nosuid nodev barrier=1
-
 on early-init
     device /dev/block/mmcblk0p17 0460 radio diag
-
     mount debugfs debugfs /sys/kernel/debug
 
 on init
-    
+    export EXTERNAL_STORAGE /storage/sdcard0
     mkdir /storage 0775 system system
-    mkdir /storage/sdcard0 0777 system system
-    mkdir /storage/emmc 0777 system system
-    
+    mkdir /storage/sdcard0 0775 system system
 
     # For backwards compatibility
     symlink /storage/sdcard0 /sdcard
     symlink /storage/sdcard0 /mnt/sdcard
-    
-    
-    export EXTERNAL_STORAGE /storage/sdcard0
-    export SECONDARY_STORAGE /storage/emmc
+
     # double check the perms and set owner
     chown root root /devlog
     chmod 0700 /devlog
 
+# NETWORK: NAT setting
+# To prevent out of WINDOW ACK from making
+# connection tracking to treat them as INVALID packet
+    write /proc/sys/net/netfilter/nf_conntrack_tcp_be_liberal 1
 
-    #set G-Sensor and Compass permissions
-    chown compass system /dev/akm8975_aot
-    chown compass system /dev/akm8975_daemon
-    chown compass system /dev/bma150
-    chmod 0640 /dev/akm8975_aot
-    chmod 0640 /dev/akm8975_daemon
-    chmod 0640 /dev/bma150
+on fs
+    # mount all mmc partitions
+    mount_all /fstab.protou
+
+on post-fs-data
+    # create basic filesystem structure
+    mkdir /dev/radio 0770 radio radio
+
+    chown system system /sys/class/graphics/fb0/ratelimit
 
 on boot
-    mkdir /data/misc/wifi 0770 wifi wifi
-    mkdir /data/misc/wifi/sockets 0770 wifi wifi
-    mkdir /data/misc/dhcp 0770 dhcp dhcp
-    chown dhcp dhcp /data/misc/dhcp
+    # Tweak background writeout
+    write /proc/sys/vm/dirty_background_bytes 1024000
+    write /proc/sys/vm/dirty_bytes 10240000
 
-    # bluetooth power up/down interface
-    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
-    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
-    chmod 0660                /sys/class/rfkill/rfkill0/state
-
-    # Widevine DRM
-	chown drm system /dev/htcdrm
-	chmod 0660 /dev/htcdrm
-
-    # HTC SSD Audio
-	mkdir /data/audio
-	chown media audio /data/audio
-	chmod 755 /data/audio
-
-	# for wireless modem
-	chown system system /sys/module/serial/parameters/modem_enabled
-	chown system system /dev/ttyHSUSB0
-	chown system system /dev/ttySA0
-	chown system system /dev/smd9
-
-	# for Flip to speaker
-	chown radio radio /sys/class/htc_accelerometer/accelerometer/PhoneOnOffFlag
-	chown radio radio /sys/class/htc_ecompass/ecompass/PhoneOnOffFlag
-
-	# for Optical sensors
-	chown system system /sys/class/optical_sensors/lightsensor/ls_adc
-	chown system system /sys/class/optical_sensors/lightsensor/ls_auto
-	chown system system /sys/class/optical_sensors/lightsensor/ls_kadc
-	chown system radio /sys/class/optical_sensors/proximity/ps_adc
-	chown system system /sys/class/optical_sensors/proximity/ps_kadc
-	chown system system /sys/class/optical_sensors/proximity/ps_led
-	chown system system /sys/class/optical_sensors/proximity/ps_test_mode
-
-	# for simlock
-	chown radio radio /dev/simlock
-	chmod 0660 /dev/simlock
-
-	# for charging function
-	chown radio radio /sys/class/power_supply/battery/phone_call
-	chmod 0220 /sys/class/power_supply/battery/phone_call
-
-    # Discretix DRM change start
-    mkdir /data/DxDrm
-    mkdir /data/DxDrm/fuse
-    chmod 555 /data/DxDrm
-    mkdir /sdcard/download
-    copy /etc/DxDrmConfig_Server.txt /data/DxDrm/DxDrmConfig_Server.txt
-
-# HTC SSD Battery - BEGIN
-# for RIL to notify battery driver talking and network_search state
-        chown radio radio /sys/class/power_supply/battery/phone_call
-# HTC SSD Battery - END
+    # Permissions for System Server and daemons.
+    chown radio system /sys/android_power/state
+    chown radio system /sys/android_power/request_state
+    chown radio system /sys/android_power/acquire_full_wake_lock
+    chown radio system /sys/android_power/acquire_partial_wake_lock
+    chown radio system /sys/android_power/release_wake_lock
+    chown radio system /sys/power/state
+    chown radio system /sys/power/wake_lock
+    chown radio system /sys/power/wake_unlock
+    chmod 0444 /sys/android_camera/fps_mode
+    chmod 0660 /sys/android_camera2/htcwc
+    chown media system /sys/android_camera2/htcwc
+    chown media system /sys/android_camera/cam3Dmode
+    chown radio system /sys/camera_led_status/led_ril_status
+    chown system system /sys/camera_led_status/led_wimax_status
+    chown system system /sys/camera_led_status/led_hotspot_status
+    chown media system /sys/android_camera/cam_mode
+    chmod 0660 /sys/power/state
+    chmod 0660 /sys/power/wake_lock
+    chmod 0660 /sys/power/wake_unlock
+    chown system system /sys/class/timed_output/vibrator/enable
+    chown system system /sys/class/leds/keyboard-backlight/brightness
+    chown system system /sys/class/leds/lcd-backlight/brightness
+    chown system system /sys/class/leds/button-backlight/brightness
+    chown system system /sys/class/leds/jogball-backlight/brightness
+    chown system system /sys/class/leds/red/brightness
+    chown system system /sys/class/leds/green/brightness
+    chown system system /sys/class/leds/blue/brightness
+    chown system system /sys/class/leds/red/device/grpfreq
+    chown system system /sys/class/leds/red/device/grppwm
+    chown system system /sys/class/leds/red/device/blink
+    chown system system /sys/class/leds/red/brightness
+    chown system system /sys/class/leds/green/brightness
+    chown system system /sys/class/leds/blue/brightness
+    chown system system /sys/class/leds/red/device/grpfreq
+    chown system system /sys/class/leds/red/device/grppwm
+    chown system system /sys/class/leds/red/device/blink
+    chown system system /sys/class/timed_output/vibrator/enable
+    chown system system /sys/module/sco/parameters/disable_esco
+    chown system system /sys/kernel/ipv4/tcp_wmem_min
+    chown system system /sys/kernel/ipv4/tcp_wmem_def
+    chown system system /sys/kernel/ipv4/tcp_wmem_max
+    chown system system /sys/kernel/ipv4/tcp_rmem_min
+    chown system system /sys/kernel/ipv4/tcp_rmem_def
+    chown system system /sys/kernel/ipv4/tcp_rmem_max
+    chown root radio /proc/cmdline
 
 # HTC SSD Peripheral UI - BEGIN
     chown system system /sys/class/leds/red/brightness
@@ -144,14 +119,66 @@ on boot
     chown system system /sys/devices/virtual/htc_accessory/tty/flag
 # HTC SSD Peripheral UI - END
 
+# HTC SSD Camera
+    chown media system /sys/camera_htccallback/htccallback
+
+#set touch permissions
+	chown system system /sys/android_touch/unlock
+#set keypad permissions
+	chown media media /sys/keyboard/vol_wakeup
+
+    chown root system /proc/driver/hdf
+    chmod 0664 /proc/driver/hdf
+
+    mkdir /data/misc/wifi 0770 wifi wifi
+    mkdir /data/misc/wifi/sockets 0770 wifi wifi
+    mkdir /data/misc/dhcp 0770 dhcp dhcp
+    chown dhcp dhcp /data/misc/dhcp
+
+	chmod 0644 /proc/cmdline
+
+    # bluetooth power up/down interface
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/type
+    chown bluetooth bluetooth /sys/class/rfkill/rfkill0/state
+    chmod 0660                /sys/class/rfkill/rfkill0/state
+
+    # HTC SSD Audio
+	mkdir /data/audio
+	chown media audio /data/audio
+	chmod 755 /data/audio
+
+	# for Flip to speaker
+	chown radio radio /sys/class/htc_accelerometer/accelerometer/PhoneOnOffFlag
+	chown radio radio /sys/class/htc_ecompass/ecompass/PhoneOnOffFlag
+
+	# for Optical sensors
+	chown system system /sys/class/optical_sensors/lightsensor/ls_adc
+	chown system system /sys/class/optical_sensors/lightsensor/ls_auto
+	chown system system /sys/class/optical_sensors/lightsensor/ls_kadc
+	chown system radio /sys/class/optical_sensors/proximity/ps_adc
+	chown system system /sys/class/optical_sensors/proximity/ps_kadc
+	chown system system /sys/class/optical_sensors/proximity/ps_led
+	chown system system /sys/class/optical_sensors/proximity/ps_test_mode
+
+	# for charging function
+	chown radio radio /sys/class/power_supply/battery/phone_call
+	chmod 0220 /sys/class/power_supply/battery/phone_call
+
+# HTC SSD Battery - BEGIN
+# for RIL to notify battery driver talking and network_search state
+        chown radio radio /sys/class/power_supply/battery/phone_call
+# HTC SSD Battery - END
+
     # Load kineto_gan.ko while booting
     insmod /system/lib/modules/kineto_gan.ko
 
     # Load bcmdhd.ko while booting
     insmod /system/lib/modules/bcmdhd.ko
-# Force loading of modem and Q6 images
-service load-modem /system/bin/load-modem.sh
-    oneshot
+
+# HTC add: SSD_RIL sets window scaling
+on property:ro.ril.windows.scaling=0
+    write /proc/sys/net/ipv4/tcp_window_scaling 0
+    write /proc/sys/net/ipv6/tcp_window_scaling 0
 
 #service wpa_supplicant /system/bin/logwrapper /system/bin/wpa_supplicant -Dnl80211 -iwlan0 -c/data/misc/wifi/wpa_supplicant.conf -puse_p2p_group_interface=1
 # wifi ++
@@ -187,19 +214,11 @@ service bugreport /system/bin/dumpstate -d -v -o /sdcard/bugreports/bugreport
     oneshot
     keycodes 114 115
 
-#service hciattach /system/bin/brcm_patchram_plus --enable_hci --patchram /etc/firmware/bcm4329.hcd /dev/ttyHS0
-#    user bluetooth
-#    group bluetooth net_bt_admin
-#    disabled
-
-# Make sure we startup btld before hcid
-# Set target address to emulator host loopback IF
-# Limit baudrate to 460800 to ensure reliable uart operation
-service btld /system/bin/btld -lpm 1 -hb 3000000
+service hciattach /system/bin/logwrapper /system/bin/brcm_patchram_plus --no2bytes --tosleep=50000 --enable_hci --baudrate 3000000 --patchram /system/etc/firmware/BCM4330B1_002.001.003.0221.0228.hcd --scopcm=0,0,0,0,0,0,0,3,3,0 /dev/ttyHS0
     user root
-    group bluetooth net_bt_admin
+    group bluetooth net_bt_admin net_bt_stack
     disabled
-    onrestart restart bluetoothd
+    oneshot
 
 # for USB internet sharing
 service udhcpd /system/bin/udhcpd
@@ -257,9 +276,6 @@ on property:service.ser2net.enable=0
 service hdmid /system/bin/hdmid
     socket displayd stream 0660 root system graphics
 
-service htcbatt /system/bin/htcbatt
-    user root
-
 service dcvs0 /system/bin/dcvs --cpu=0 --slacktime=16
     user root
     disabled
@@ -294,28 +310,6 @@ service qcom-post-boot /system/bin/sh /system/etc/init.qcom.post_boot.sh
     disabled
     oneshot
 
-service htc_ebdlogd /system/bin/htc_ebdlogd -s -k -P 7
-    user root
-    disabled
-    oneshot
-    ioprio idle 0
-
-service htc_ebdlogd_rel /system/bin/htc_ebdlogd -s -k
-    user root
-    disabled
-    oneshot
-    ioprio idle 0
-
-# Discretix DRM change start
-service dx_drm_server /system/bin/DxDrmServerIpc -f -o allow_other /data/DxDrm/fuse
-    class main
-
-on property:ro.build.tags=test-keys
-    start htc_ebdlogd
-
-on property:ro.build.tags=release-keys
-    start htc_ebdlogd_rel
-
 # Widevine DRM
 	chown drm system /dev/htcdrm
 	chmod 0660 /dev/htcdrm
@@ -328,27 +322,3 @@ service qcamerasvr /system/bin/mm-qcamera-daemon
 # Automotive connectivity
 service cand /system/bin/cand
     user root
-
-	# This will grant permission for LMI Rescue Start Server  
-  chown graphics /RescueStarter
-  chmod 755 /RescueStarter
-  chown graphics /RescueServer
-  chmod 755 /RescueServer
-
-  
-	# This will start LMI Rescue Start Server
-	service RescueStarter /system/bin/RescueStarter
-      class core
-      user graphics
-      group input graphics	# This will grant permission for LMI Rescue Start Server  
-  chown graphics /RescueStarter
-  chmod 755 /RescueStarter
-  chown graphics /RescueServer
-  chmod 755 /RescueServer
-
-  
-	# This will start LMI Rescue Start Server
-	service RescueStarter /system/bin/RescueStarter
-      class core
-      user graphics
-      group input graphics

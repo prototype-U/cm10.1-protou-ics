@@ -84,7 +84,6 @@ device/htc/protou/bluetooth/bt_vendor.conf:system/etc/bluetooth/bt_vendor.conf
 # Ramdisk
 PRODUCT_COPY_FILES += \
     device/htc/protou/ramdisk/fstab.protou:root/fstab.protou \
-    device/htc/protou/ramdisk/init:root/init \
     device/htc/protou/ramdisk/init.protou.rc:root/init.protou.rc \
     device/htc/protou/ramdisk/init.protou.usb.rc:root/init.protou.usb.rc \
     device/htc/protou/ramdisk/ueventd.protou.rc:root/ueventd.protou.rc
