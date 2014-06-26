@@ -15,7 +15,6 @@
 /dev/ttyHSUSB1            0666   system     system
 /dev/simlock              0660   radio      radio
 
-
 /dev/rtc0                 0600   system     system
 
 # the genlock client device node is world writable/readable.
@@ -75,7 +74,13 @@
 /dev/block/mmcblk0p18     0660   system     system
 /dev/video*	          0660   system     camera
 /dev/media*               0660   system     camera
-
+/dev/msm_camera		  0660   system     system
+/dev/msm_camera/*	  0660   system     system
+/dev/msm_camera/config0	  0660   system     system 
+/dev/msm_camera/control0  0660   system     system 
+/dev/msm_camera/frame0    0660   system     system 
+/dev/ttySMD0              0660   radio      radio
+/dev/smd0                 0660   radio      radio
 #regular apps need to be able to open ion
 /dev/ion                  0664   system     system
 
